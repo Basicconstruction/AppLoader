@@ -1,0 +1,5 @@
+at FrameWork.java
+    41 jsc.setBackground(Color.WHITE);  取消注释会发现jPanel的大小会发生变化。 若想要观察这个效果，需要把第二条改回去
+    jsc.repaint(); 替换了59行的 setContentPane(jsc); 发现，界面大小变化效果消失，并且解决了重叠问题。
+    jsc.getVerticalScrollBar().setUnitIncrement(16); 作用于JScrollPane可改变滑轮滑动效果。
+
