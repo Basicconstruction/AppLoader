@@ -8,22 +8,26 @@ public class DataProvider<T> {
     private int currentSteps = 0;
     private int maxSteps = 0;
     public boolean hasNext = true;
-    private ArrayList<ArrayList<T>> data = new ArrayList<>();
-    private int getSize = 0;
-    public DataProvider(){
-
-    }
+    private ArrayList<ArrayList<T>> data;
+    public final ArrayList<ArrayList<Integer>> storagePointer = new ArrayList<>();
+    public final ArrayList<ArrayList<Integer>> storageExcelPointer = new ArrayList<>();
+    private int getSize;
     /**
      * 二维数据集提供器，对于每一分类（一维），从一维的二维中取得给定长度的数据。
      * 不会跨越第一
      * */
-    public DataProvider(ArrayList<ArrayList<T>> data,int getSize) {
+    public DataProvider(ArrayList<ArrayList<T>> data, int getSize) {
         this.data = data;
         this.getSize = getSize;
         if(!(this.data.size() >0&&this.data.get(0).size()>0)){
             hasNext = false;
         }
         getMaxSteps();
+        ArrayList<Integer> tp = new ArrayList<>(2);
+        tp.add(0);
+        tp.add(0);
+        storagePointer.add(tp);//add 0 0 in!
+        storageExcelPointer.add(tp);//add 0 0 in!
     }
     public void printPointers(){
         System.out.println("pointer1: "+pointer1+"\n"+"pointer2 "+pointer1);
@@ -31,49 +35,47 @@ public class DataProvider<T> {
     public int getCurrentSteps(){
         return currentSteps;
     }
-    public void setGetSize(int getSize){
-        this.getSize = getSize;
-    }
-    public void setData(ArrayList<ArrayList<T>> data){
-        this.data = data;
-        if(!(this.data.size() >0&&this.data.get(0).size()>0)){
-            hasNext = false;
-        }
-        getMaxSteps();
-
-    }
     /**将迭代指针置0，使得迭代可以从头开始。 */
     public void setPointerInit(){
         pointer1 = 0;
         pointer2 = 0;
         currentSteps = 0;
     }
-    public void getMaxSteps(){
+    public int getMaxSteps(){
         int i = 0;
-        while(this.get().size()>1){
-            i++;
+        for (ArrayList<T> datum : data) {
+            i += datum.size() % getSize == 0 ? datum.size() / getSize : datum.size() / getSize + 1;
         }
         this.maxSteps = i;
-        setPointerInit();
+        return i;
     }
+    /**
+     * need to change when add another get function
+     * */
     public void run(int steps){
-        if(steps>maxSteps){
-            steps = maxSteps;
-        }else if(steps<=0){
-            steps = 0;
-        }
-        while(steps>0){
-            steps--;
-            get(0);
+        currentSteps = steps;
+        if(currentSteps<=storagePointer.size()-1){
+            pointer1 = storagePointer.get(currentSteps).get(0);
+            pointer2 = storagePointer.get(currentSteps).get(1);
+        }else{
+            currentSteps = storagePointer.size()-1;
+            pointer1 = storagePointer.get(currentSteps).get(0);
+            pointer2 = storagePointer.get(currentSteps).get(1);
+            for(int h = currentSteps;h<=steps;h++){
+                get();
+            }
         }
     }
+    /**
+     * 回退一步
+     * */
     public void back(){
-        setPointerInit();
-        for(int i = 0;i<currentSteps;i++){
-            get(0);
-        }
+        pointer1 = storagePointer.get(currentSteps-1).get(0);
+        pointer2 = storagePointer.get(currentSteps-1).get(1);
+        currentSteps--;
     }
     /**从对象的数据中取出适当数据，并返回。
+     * 不跨越一维数组的取出形式
      * 工作参数:来自对象-pointer1,pointer2,getSize,data,返回ArrayList<T>
      *     即：想要返回什么，就传入想返回的类型包含的类型
      *     例如：想返回 ArrayList<ArrayList<String>>就传入ArrayList<String>
@@ -111,8 +113,20 @@ public class DataProvider<T> {
         }else{
             hasNext = false;
         }
+        if(storagePointer.size()<=currentSteps){
+            ArrayList<Integer> tp = new ArrayList<>(2);
+            tp.add(pointer1);
+            tp.add(pointer2);
+            storagePointer.add(tp);
+        }
         return collector;
     }
+    /**从对象的数据中取出适当数据，并返回。
+     * 跨越一维数组的取出形式
+     * 工作参数:来自对象-pointer1,pointer2,getSize,data,返回ArrayList<T>
+     *     即：想要返回什么，就传入想返回的类型包含的类型
+     *     例如：想返回 ArrayList<ArrayList<String>>就传入ArrayList<String>
+     * */
     public void get(int param){
         currentSteps++;
         int counter = 0;
